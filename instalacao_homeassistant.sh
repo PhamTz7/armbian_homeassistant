@@ -1,10 +1,3 @@
-#######################################################################
-#######################################################################
-##                                                                   ##
-## THIS SCRIPT SHOULD ONLY BE RUN ON A TANIX TX3 BOX RUNNING ARMBIAN ##
-##                                                                   ##
-#######################################################################
-#######################################################################
 set -o errexit  # Exit script when a command exits with non-zero status
 set -o errtrace # Exit on error inside any functions or sub-shells
 set -o nounset  # Exit script on use of an undefined variable
@@ -87,7 +80,8 @@ install_dependences() {
   echo "A instalar dependencias..."
   echo ""
   
-  apt install \
+  apt-get update
+  apt-get install -y \
   apparmor \
   jq \
   wget \
@@ -97,7 +91,8 @@ install_dependences() {
   network-manager \
   dbus \
   lsb-release \
-  systemd-journal-remote -y
+  systemd-journal-remote \
+  systemd-timesyncd
 #  systemd-resolved -y
 }
 
@@ -145,9 +140,15 @@ install_hassio() {
   echo ""
 
   apt-get update
-  apt-get install udisks2 wget -y
+  apt-get install -y udisks2 wget
+
+  # Garante que systemd-timesyncd existe antes de instalar o .deb do Home Assistant
+  apt-get install -y systemd-timesyncd || true
+
   wget https://github.com/home-assistant/supervised-installer/releases/latest/download/homeassistant-supervised.deb
-  sudo dpkg -i --ignore-depends=systemd-resolved homeassistant-supervised.deb
+  # Instala o pacote, depois força correção de dependências se necessário
+  sudo dpkg -i homeassistant-supervised.deb || true
+  sudo apt-get -f install -y
 
 }
 
